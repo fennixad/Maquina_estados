@@ -23,7 +23,7 @@ public class EnemyMovement : MonoBehaviour
         stopTimer = 0;
         isStopping = false;
         patrolDirection = true;
-        timeBeetweenAttacks = 0f;
+        timeBeetweenAttacks = 2f;
         stopDistance = 2.0f;
 
         anim = GetComponent<Animator>();
@@ -187,13 +187,13 @@ public class EnemyMovement : MonoBehaviour
 
     void TimeBeetweenAttacks()
     {
-        timeBeetweenAttacks += Time.deltaTime;
+        timeBeetweenAttacks -= Time.deltaTime;
 
-        if (timeBeetweenAttacks >= 1.0f)
+        if (timeBeetweenAttacks <= 0f)
         {
             Debug.Log("Attack");
             anim.SetBool("Attack", true);
-            timeBeetweenAttacks = 0f;
+            timeBeetweenAttacks = 2f;
         }
     }
 }
