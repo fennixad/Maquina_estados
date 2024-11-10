@@ -9,12 +9,20 @@ public class EnemyMovement : MonoBehaviour
     private Animator anim;
     private int actualPoint;
     private int actualState;
-    private float speed;
+    public float speed;
     private float speedRotation;
     private float timeBeetweenAttacks;
     private float stopDistance;
+    public bool patrolDirection;
+
+    private bool isStopping;
+    private float stopTimer;
+
     void Start()
     {
+        stopTimer = 0;
+        isStopping = false;
+        patrolDirection = true;
         timeBeetweenAttacks = 0f;
         stopDistance = 2.0f;
 
@@ -38,26 +46,47 @@ public class EnemyMovement : MonoBehaviour
 
     void Update()
     {
-        /*
-        if (Vector3.Distance(transform.position, target.position) <= 15f && Vector3.Distance(transform.position, target.position) > stopDistance)
+        if (Vector3.Distance(transform.position, target.position) <= 15f && Vector3.Distance(transform.position, target.position) >= stopDistance)
         {
             actualState = 1;
         }
         else if (Vector3.Distance(transform.position, target.position) <= stopDistance)
         {
-            actualState = 2; // Cambia a estado de ataque
+            actualState = 2; 
         }
-        else
+        else if (isStopping)
+        {
+            actualState = 4;
+        }
+        else if (!isStopping) 
         {
             actualState = 0;
         }
 
         StateManager();
-        */
-
-        anim.SetTrigger("IdleAttack");
+        PatrolDirection(patrolDirection);
     }
 
+    void PatrolDirection (bool direction)
+    {
+        patrolPoints.Clear();
+
+        if (direction)
+        {
+            patrolPoints.Add(new Vector3(30f, 0, 30f));
+            patrolPoints.Add(new Vector3(-30f, 0, 30f));
+            patrolPoints.Add(new Vector3(-30f, 0, -30f));
+            patrolPoints.Add(new Vector3(30f, 0, -30f));
+        }
+        else
+        {
+            patrolPoints.Add(new Vector3(30f, 0, -30f));
+            patrolPoints.Add(new Vector3(-30f, 0, -30f));
+            patrolPoints.Add(new Vector3(-30f, 0, 30f));
+            patrolPoints.Add(new Vector3(30f, 0, 30f));
+        }
+
+    }
 
     void StateManager()
     {
@@ -75,27 +104,46 @@ public class EnemyMovement : MonoBehaviour
             case 3:
                 //death
                 break;
+            case 4:
+                Debug.Log("Entro en case 4");
+                StopMoving();
+                break;
         }
     }
 
+    void StopMoving()
+    {
+        anim.SetBool("Walking", false);
+        anim.SetBool("Running", false);
+        anim.SetBool("Idle", true);
+
+        if (stopTimer > 2f)
+        {
+            isStopping = false;
+        }
+        stopTimer += Time.deltaTime;
+    }
     void DoPatrol()
     {
-        speed = 1;
-        anim.SetBool("Walking", true);
-        anim.SetBool("Running", false);
-        anim.SetBool("Idle", false);
-
-        moveEnemyToPosition(patrolPoints[actualPoint]);
-
-        if (Vector3.Distance(transform.position, patrolPoints[actualPoint]) < 1)
+        if (!isStopping)
         {
-            if (actualPoint == patrolPoints.Count - 1)
+            speed = 1;
+            anim.SetBool("Walking", true);
+            anim.SetBool("Running", false);
+            anim.SetBool("Idle", false);
+
+            moveEnemyToPosition(patrolPoints[actualPoint]);
+
+            if (Vector3.Distance(transform.position, patrolPoints[actualPoint]) < 1)
             {
-                actualPoint = 0;
-            } 
-            else
-            {
-                actualPoint++;
+                if (actualPoint == patrolPoints.Count - 1)
+                {
+                    actualPoint = 0;
+                }
+                else
+                {
+                    actualPoint++;
+                }
             }
         }
 
@@ -110,7 +158,8 @@ public class EnemyMovement : MonoBehaviour
             anim.SetBool("Running", true);
             anim.SetBool("Idle", false);
             moveEnemyToPosition(target.position);
-        }
+            isStopping = true;
+        } 
     }
 
     void moveEnemyToPosition(Vector3 position)
@@ -124,23 +173,27 @@ public class EnemyMovement : MonoBehaviour
 
     void DoAttack()
     {
-        //anim.SetBool("Walking", false);
-        //anim.SetBool("Idle", false);
-        anim.SetTrigger("IdleAttack");
-        //TimeBeetweenAttacks();
+        anim.SetBool("Walking", false);
+        anim.SetBool("Idle", false);
+        anim.SetBool("Running", false);
+
+        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("IdleAttack"))
+        {
+            anim.SetTrigger("IdleAttack");
+        }
+
+        TimeBeetweenAttacks();
     }
 
     void TimeBeetweenAttacks()
     {
         timeBeetweenAttacks += Time.deltaTime;
 
-        if (timeBeetweenAttacks >= 2.0f)
+        if (timeBeetweenAttacks >= 1.0f)
         {
+            Debug.Log("Attack");
             anim.SetBool("Attack", true);
             timeBeetweenAttacks = 0f;
-        } else
-        {
-            anim.SetBool("Attack", false);
         }
     }
 }
