@@ -14,10 +14,13 @@ public class EnemyMovement : MonoBehaviour
     private float timeBeetweenAttacks;
     private float stopDistance;
     public bool patrolDirection;
-
     private bool isStopping;
     private float stopTimer;
+    public CombatStats combatStats;
 
+    float counterTime;
+    float timeAttack;
+    float counterFight;
     void Start()
     {
         stopTimer = 0;
@@ -25,8 +28,18 @@ public class EnemyMovement : MonoBehaviour
         patrolDirection = true;
         timeBeetweenAttacks = 2f;
         stopDistance = 2.0f;
-
+        combatStats = GetComponent<CombatStats>();
         anim = GetComponent<Animator>();
+        RuntimeAnimatorController ac = anim.runtimeAnimatorController;
+
+        for (int i = 0; i < ac.animationClips.Length; i++)
+        {
+            if (ac.animationClips[i].name == "Attack")
+            {
+                timeAttack = ac.animationClips[i].length;
+                i = ac.animationClips.Length;
+            }
+        }
 
         if (target == null)
         {
@@ -46,11 +59,11 @@ public class EnemyMovement : MonoBehaviour
 
     void Update()
     {
-        if (Vector3.Distance(transform.position, target.position) <= 15f && Vector3.Distance(transform.position, target.position) >= stopDistance)
+        if (Vector3.Distance(transform.position, target.transform.position) <= 15f && Vector3.Distance(transform.position, target.transform.position) >= stopDistance)
         {
             actualState = 1;
         }
-        else if (Vector3.Distance(transform.position, target.position) <= stopDistance)
+        else if (Vector3.Distance(transform.position, target.transform.position) <= stopDistance)
         {
             actualState = 2; 
         }
@@ -128,6 +141,7 @@ public class EnemyMovement : MonoBehaviour
         if (!isStopping)
         {
             speed = 1;
+            anim.SetBool("IdleAttack", false);
             anim.SetBool("Walking", true);
             anim.SetBool("Running", false);
             anim.SetBool("Idle", false);
@@ -154,9 +168,11 @@ public class EnemyMovement : MonoBehaviour
         if (Vector3.Distance(transform.position, target.position) > stopDistance && (Vector3.Distance(transform.position, target.position) <= 15f))
         {
             speed = 2;
+            anim.SetBool("IdleAttack", false);
             anim.SetBool("Walking", false);
             anim.SetBool("Running", true);
             anim.SetBool("Idle", false);
+
             moveEnemyToPosition(target.position);
             isStopping = true;
         } 
@@ -173,6 +189,7 @@ public class EnemyMovement : MonoBehaviour
 
     void DoAttack()
     {
+        /*
         anim.SetBool("Walking", false);
         anim.SetBool("Idle", false);
         anim.SetBool("Running", false);
@@ -183,7 +200,33 @@ public class EnemyMovement : MonoBehaviour
         }
 
         TimeBeetweenAttacks();
+        
+        */
+        anim.SetBool("Walking", false);
+        anim.SetBool("Running", false);
+        anim.SetBool("IdleAttack", true);
+        Vector3 direccion = target.transform.position - transform.position; 
+        direccion = new Vector3(direccion.x, 0, direccion.z); Quaternion rot = Quaternion.LookRotation(direccion, transform.up); 
+        transform.rotation = Quaternion.Slerp(transform.rotation, rot, speedRotation / 4 * Time.deltaTime); 
+        counterFight = counterFight + Time.deltaTime; 
+        if (counterFight > timeAttack + 0.5f) { 
+            counterFight = 0;
+            print("Lanzo rayo");
+
+            if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), transform.TransformDirection(Vector3.forward) * 10, out RaycastHit hit, 2.5f)) { 
+                print("Te detecto"); 
+                anim.SetTrigger("Attack");
+                combatStats.ApplyDamage(10);
+            }
+        }
+    /*
+    timeBeetweenAttacks = timeBeetweenAttacks - Time.deltaTime;
+    if (timeBeetweenAttacks <= 0)
+    {
+        timeBeetweenAttacks =  ;
     }
+    */
+}
 
     void TimeBeetweenAttacks()
     {
@@ -193,6 +236,7 @@ public class EnemyMovement : MonoBehaviour
         {
             Debug.Log("Attack");
             anim.SetBool("Attack", true);
+            combatStats.ApplyDamage(10);
             timeBeetweenAttacks = 2f;
         }
     }
