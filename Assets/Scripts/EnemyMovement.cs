@@ -126,6 +126,7 @@ public class EnemyMovement : MonoBehaviour
 
     void StopMoving()
     {
+        anim.SetBool("IdleAttack", false);
         anim.SetBool("Walking", false);
         anim.SetBool("Running", false);
         anim.SetBool("Idle", true);
@@ -138,6 +139,7 @@ public class EnemyMovement : MonoBehaviour
     }
     void DoPatrol()
     {
+        print("Entro en DoPatrol");
         if (!isStopping)
         {
             speed = 1;
@@ -165,6 +167,7 @@ public class EnemyMovement : MonoBehaviour
 
     void DoAggro()
     {
+        print("Entro en DoAggro");
         if (Vector3.Distance(transform.position, target.position) > stopDistance && (Vector3.Distance(transform.position, target.position) <= 15f))
         {
             speed = 2;
@@ -173,8 +176,8 @@ public class EnemyMovement : MonoBehaviour
             anim.SetBool("Running", true);
             anim.SetBool("Idle", false);
 
+            isStopping = false;
             moveEnemyToPosition(target.position);
-            isStopping = true;
         } 
     }
 
@@ -189,55 +192,24 @@ public class EnemyMovement : MonoBehaviour
 
     void DoAttack()
     {
-        /*
-        anim.SetBool("Walking", false);
-        anim.SetBool("Idle", false);
-        anim.SetBool("Running", false);
-
-        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("IdleAttack"))
-        {
-            anim.SetTrigger("IdleAttack");
-        }
-
-        TimeBeetweenAttacks();
-        
-        */
+        print("Entro en DoAttack");
         anim.SetBool("Walking", false);
         anim.SetBool("Running", false);
         anim.SetBool("IdleAttack", true);
-        Vector3 direccion = target.transform.position - transform.position; 
+        Vector3 direccion = target.transform.position - transform.position;
         direccion = new Vector3(direccion.x, 0, direccion.z); Quaternion rot = Quaternion.LookRotation(direccion, transform.up); 
         transform.rotation = Quaternion.Slerp(transform.rotation, rot, speedRotation / 4 * Time.deltaTime); 
         counterFight = counterFight + Time.deltaTime; 
-        if (counterFight > timeAttack + 0.5f) { 
+        if (counterFight > timeAttack + 1f) { 
             counterFight = 0;
-            print("Lanzo rayo");
 
-            if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), transform.TransformDirection(Vector3.forward) * 10, out RaycastHit hit, 2.5f)) { 
-                print("Te detecto"); 
+            if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), transform.TransformDirection(Vector3.forward) * 10, out RaycastHit hit, 2.5f)) 
+            {
+                Debug.Log("Ataco");
+                anim.SetBool("IdleAttack", false);
                 anim.SetTrigger("Attack");
                 combatStats.ApplyDamage(10);
             }
-        }
-    /*
-    timeBeetweenAttacks = timeBeetweenAttacks - Time.deltaTime;
-    if (timeBeetweenAttacks <= 0)
-    {
-        timeBeetweenAttacks =  ;
-    }
-    */
-}
-
-    void TimeBeetweenAttacks()
-    {
-        timeBeetweenAttacks -= Time.deltaTime;
-
-        if (timeBeetweenAttacks <= 0f)
-        {
-            Debug.Log("Attack");
-            anim.SetBool("Attack", true);
-            combatStats.ApplyDamage(10);
-            timeBeetweenAttacks = 2f;
         }
     }
 }
