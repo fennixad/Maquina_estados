@@ -11,24 +11,36 @@ public class EnemyMovement : MonoBehaviour
     private int actualState;
     public float speed;
     private float speedRotation;
-    private float timeBeetweenAttacks;
     private float stopDistance;
     public bool patrolDirection;
     private bool isStopping;
-    private float stopTimer;
     public CombatStats combatStats;
-
+    public string playerEntity;
+    public string enemyEntity;
+    private bool entityIsAlive;
+    private bool doDamage;
     float counterTime;
     float timeAttack;
     float counterFight;
     void Start()
     {
-        stopTimer = 0;
+        playerEntity = "Player";
+        enemyEntity = "Enemy";
+
+        timeAttack = 2;
+        doDamage = false;
         isStopping = false;
         patrolDirection = true;
-        timeBeetweenAttacks = 2f;
         stopDistance = 2.0f;
-        combatStats = GetComponent<CombatStats>();
+
+        
+        GameObject enemy = GameObject.FindWithTag("Enemy");
+        if (enemy != null)
+        {
+            combatStats = enemy.GetComponent<CombatStats>();
+        }
+        
+
         anim = GetComponent<Animator>();
         RuntimeAnimatorController ac = anim.runtimeAnimatorController;
 
@@ -59,9 +71,17 @@ public class EnemyMovement : MonoBehaviour
 
     void Update()
     {
+        /*
+        entityIsAlive = combatStats.IsEntityAlive("Enemy");
+
         if (Vector3.Distance(transform.position, target.transform.position) <= 15f && Vector3.Distance(transform.position, target.transform.position) >= stopDistance)
         {
             actualState = 1;
+        }
+        else if (!entityIsAlive)
+        {
+            Debug.Log(enemyEntity);
+            actualState = 3;
         }
         else if (Vector3.Distance(transform.position, target.transform.position) <= stopDistance)
         {
@@ -74,6 +94,30 @@ public class EnemyMovement : MonoBehaviour
         else if (!isStopping) 
         {
             actualState = 0;
+        }
+
+        StateManager();
+        PatrolDirection(patrolDirection);
+        */
+        if (enemy..GetHealth() <= 0) // Aquí verificamos el CombatStats del enemigo
+        {
+            actualState = 3; // Cambia al estado de muerte
+        }
+        else if (Vector3.Distance(transform.position, target.transform.position) <= 15f && Vector3.Distance(transform.position, target.transform.position) >= stopDistance)
+        {
+            actualState = 1; // Cambia al estado de "agro"
+        }
+        else if (Vector3.Distance(transform.position, target.transform.position) <= stopDistance)
+        {
+            actualState = 2; // Cambia al estado de "ataque"
+        }
+        else if (isStopping)
+        {
+            actualState = 4; // Cambia al estado de "parada"
+        }
+        else
+        {
+            actualState = 0; // Cambia al estado de "patrullaje"
         }
 
         StateManager();
@@ -115,31 +159,23 @@ public class EnemyMovement : MonoBehaviour
                 DoAttack();
                 break;
             case 3:
-                //death
-                break;
-            case 4:
-                Debug.Log("Entro en case 4");
-                StopMoving();
+                Debug.Log("Entro en case3");
+                DoDie();
                 break;
         }
     }
 
-    void StopMoving()
+    void DoDie()
     {
         anim.SetBool("IdleAttack", false);
         anim.SetBool("Walking", false);
         anim.SetBool("Running", false);
-        anim.SetBool("Idle", true);
-
-        if (stopTimer > 2f)
-        {
-            isStopping = false;
-        }
-        stopTimer += Time.deltaTime;
+        anim.SetBool("Idle", false);
+        anim.SetTrigger("Death");
     }
+
     void DoPatrol()
     {
-        print("Entro en DoPatrol");
         if (!isStopping)
         {
             speed = 1;
@@ -167,7 +203,6 @@ public class EnemyMovement : MonoBehaviour
 
     void DoAggro()
     {
-        print("Entro en DoAggro");
         if (Vector3.Distance(transform.position, target.position) > stopDistance && (Vector3.Distance(transform.position, target.position) <= 15f))
         {
             speed = 2;
@@ -192,24 +227,36 @@ public class EnemyMovement : MonoBehaviour
 
     void DoAttack()
     {
-        print("Entro en DoAttack");
         anim.SetBool("Walking", false);
         anim.SetBool("Running", false);
         anim.SetBool("IdleAttack", true);
         Vector3 direccion = target.transform.position - transform.position;
         direccion = new Vector3(direccion.x, 0, direccion.z); Quaternion rot = Quaternion.LookRotation(direccion, transform.up); 
         transform.rotation = Quaternion.Slerp(transform.rotation, rot, speedRotation / 4 * Time.deltaTime); 
-        counterFight = counterFight + Time.deltaTime; 
-        if (counterFight > timeAttack + 1f) { 
-            counterFight = 0;
 
-            if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), transform.TransformDirection(Vector3.forward) * 10, out RaycastHit hit, 2.5f)) 
+        counterFight -= Time.deltaTime;
+
+        if (counterFight <= 0)
+        {
+            counterFight = timeAttack;
+            doDamage = false;
+        }
+
+        if(counterFight > timeAttack -0.1f && !doDamage)
+        {
+            if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), transform.TransformDirection(Vector3.forward) * 10, out RaycastHit hit, 2.5f))
             {
-                Debug.Log("Ataco");
-                anim.SetBool("IdleAttack", false);
+                anim.SetBool("IdleAttack", true);
                 anim.SetTrigger("Attack");
-                combatStats.ApplyDamage(10);
+                doDamage = true;
+
             }
+        }
+        if (counterFight < timeAttack / 2 && doDamage)
+        {
+            combatStats.ApplyDamage(10);
+            combatStats.ShowHealth(playerEntity);
+            doDamage = false;
         }
     }
 }
