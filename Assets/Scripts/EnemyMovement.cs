@@ -33,12 +33,6 @@ public class EnemyMovement : MonoBehaviour
         patrolDirection = true;
         stopDistance = 2.0f;
 
-        GameObject enemy = GameObject.FindWithTag("Enemy");
-        if (enemy != null)
-        {
-            combatStats = enemy.GetComponent<CombatStats>();
-        }
-
         anim = GetComponent<Animator>();
         RuntimeAnimatorController ac = anim.runtimeAnimatorController;
 
@@ -97,6 +91,9 @@ public class EnemyMovement : MonoBehaviour
         StateManager();
         PatrolDirection(patrolDirection);
         */
+
+        print(combatStats.GetHealth());
+        //print(combatStats.entity);
         if (combatStats.GetHealth() <= 0) // Aquí verificamos el CombatStats del enemigo
         {
             actualState = 3; // Cambia al estado de muerte

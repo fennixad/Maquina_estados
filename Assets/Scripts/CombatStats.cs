@@ -25,7 +25,7 @@ public class CombatStats : MonoBehaviour, IDamageable
 
     public float GetHealth()
     {
-        return health;
+         return health;
     }
 
     public void ShowHealth(string entity)
