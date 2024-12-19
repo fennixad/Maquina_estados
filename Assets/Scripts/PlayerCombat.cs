@@ -10,8 +10,13 @@ public class PlayerCombat : MonoBehaviour
     private bool canAttack;
     private Transform targetEnemy;
     private bool isAlive;
+    private int atkBonus;
+    private float time;
+    private bool powerDmg;
     void Start()
     {
+        powerDmg = false;
+        time = 0f;
         canAttack = false;
         cs = GetComponent<CombatStats>();
         anim = GetComponent<Animator>();
@@ -20,6 +25,8 @@ public class PlayerCombat : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        DeathEnemy();
+        SpecialAttack();
         CompareDistance();
         if (canAttack && Input.GetMouseButtonDown(0))
         {
@@ -57,10 +64,74 @@ public class PlayerCombat : MonoBehaviour
 
         if (cs != null)
         {
-            cs.ApplyDamage(10);
-            cs.ShowHealth("Enemy");
+            int numeroDmg = Random.Range(0, 100);
+            if(numeroDmg < 10)
+            {
+                cs.ApplyDamage(0);
+                cs.ShowHealth("Enemy");
+            } else
+            {
+                int numeroCrit = Random.Range(0, 100);
+                if (numeroCrit < 20)
+                {
+                    cs.ApplyDamage(20 + atkBonus);
+                    cs.ShowHealth("Enemy");
+                } else
+                {
+                    cs.ApplyDamage(10 + atkBonus);
+                    cs.ShowHealth("Enemy");
+                }
+
+            }
         }
 
         canAttack = false;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        atkBonus = 10;
+        Destroy(other.gameObject);
+        StartCoroutine(RemoveBuffAfterDelay(10f));
+    }
+
+    private IEnumerator RemoveBuffAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        atkBonus = 0;
+    }
+
+    private void SpecialAttack()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            StartCoroutine(SpecialPoisonAttack(5f));
+        }
+    }
+
+    private IEnumerator SpecialPoisonAttack(float duration)
+    {
+        float elapsedTime = 0f;
+        while (elapsedTime < duration)
+        {
+            cs.ApplyDamage(1f);
+            cs.ShowHealth("Enemy");
+            elapsedTime += 1f;
+            yield return new WaitForSeconds(duration);
+        }
+
+    }
+    private IEnumerator DeathEnemyCounter(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        Destroy(GameObject.FindGameObjectWithTag("Enemy"));
+    }
+
+    private void DeathEnemy()
+    {
+        if (!cs.IsEntityAlive("Enemy"))
+        {
+            StartCoroutine(DeathEnemyCounter(3f));
+        }
     }
 }
